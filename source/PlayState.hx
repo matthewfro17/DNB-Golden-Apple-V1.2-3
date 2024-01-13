@@ -3142,7 +3142,7 @@ class PlayState extends MusicBeatState
 		var rating:FlxSprite = new FlxSprite();
 		var score:Int = 350;
 
-		var daRating:String = "sick
+		var daRating:String = "sick;
 
 		if (!botPlay) {
 			if (noteDiff > Conductor.safeZoneOffset * 2)
