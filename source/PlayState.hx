@@ -3201,8 +3201,8 @@ class PlayState extends MusicBeatState
 
 			scoreTxt.scale.x = 1.1;
 			scoreTxt.scale.y = 1.1;
-			scoreTxtTween = FlxTween.tween(scoreTxt.scale, {x: 1, y: 1}, 0.2, {onComplete: function(twn:FlxTween);
-                                {
+			scoreTxtTween = FlxTween.tween(scoreTxt.scale, {x: 1, y: 1}, 0.2, {
+				onComplete: function(twn:FlxTween) {
 					scoreTxtTween = null;
 				}
 			});
