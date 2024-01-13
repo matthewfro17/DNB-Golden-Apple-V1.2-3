@@ -44,6 +44,7 @@ class OptionsMenu extends MusicBeatState
 			(FlxG.save.data.eyesores ? 'Eyesores Enabled' : 'Eyesores Disabled') + "\n" + 
 			(FlxG.save.data.donoteclick ? "Hitsounds On" : "Hitsounds Off") + "\n" + 
 			(FlxG.save.data.freeplayCuts ? "Cutscenes On" : "Cutscenes Off") + "\n" + 
+			(FlxG.save.data.botPlay ? "Botplay On" : "Botplay Off") + "\n" + 
 			preloadTXT[FlxG.save.data.preload]
 		);
 		
@@ -171,6 +172,12 @@ class OptionsMenu extends MusicBeatState
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected - 7;
 						grpControls.add(ctrl);		
+					case 8:
+						FlxG.save.data.botPlay = !FlxG.save.data.botPlay;
+						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.freeplayCuts ? "Botplay On" : "Botplay Off"), true, false);
+						ctrl.isMenuItem = true;
+						ctrl.targetY = curSelected - 6;
+						grpControls.add(ctrl);
 				}
 			}
 	}
