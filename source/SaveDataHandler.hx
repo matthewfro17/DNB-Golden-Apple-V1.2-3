@@ -53,5 +53,8 @@ class SaveDataHandler
 
 		if (FlxG.save.data.preload == null)
 			FlxG.save.data.preload = 1;
+
+		if (FlxG.save.data.botplay == null)
+			FlxG.save.data.botplay = false;
     }
 }
