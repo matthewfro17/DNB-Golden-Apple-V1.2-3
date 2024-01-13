@@ -77,6 +77,10 @@ class PlayState extends MusicBeatState
 	public static var goods:Int = 0;
 	public static var sicks:Int = 0;
 
+	public static var botPlay:Bool = false;
+	public var botplaySine:Float = 0;
+	public var botplayTxt:FlxText;
+
 	public var camBeatSnap:Int = 4;
 	public var danceBeatSnap:Int = 2;
 	public var dadDanceSnap:Int = 2;
@@ -303,6 +307,7 @@ class PlayState extends MusicBeatState
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
 		eyesoreson = FlxG.save.data.eyesores;
+		botPlay = FlxG.save.data.botplay;
 
 		sicks = 0;
 		bads = 0;
@@ -783,6 +788,18 @@ class PlayState extends MusicBeatState
 		scoreTxt.screenCenter(X);
 		if (!FlxG.save.data.accuracyDisplay)
 			scoreTxt.x /= 1.35; //fixed text being off
+
+		botplayTxt = new FlxText(400, healthBarBG.y + 55, FlxG.width - 800, "BOTPLAY", 32);
+		/*botplayTxt = new FlxText(healthBarBG.x + healthBarBG.width / 2 - 75, healthBarBG.y + (FlxG.save.data.downscroll ? 100 : -100), 0,
+		"BOTPLAY", 20);*/
+		botplayTxt.setFormat((SONG.song.toLowerCase() == "overdrive") ? Paths.font("ariblk.ttf") : font, 42, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		botplayTxt.scrollFactor.set();
+		botplayTxt.borderSize = 3;
+		botplayTxt.visible = botPlay;
+		add(botplayTxt);
+		if(FlxG.save.data.downScroll) {
+			botplayTxt.y = healthBarBG.y - 78;
+		}
 		add(scoreTxt);
 
 		var iconP1IsPlayer:Bool = true;
@@ -806,6 +823,7 @@ class PlayState extends MusicBeatState
 		iconP1.cameras = [camHUD];
 		iconP2.cameras = [camHUD];
 		scoreTxt.cameras = [camHUD];
+		botplayTxt.cameras = [camHUD];
 		kadeEngineWatermark.cameras = [camHUD];
 		timeTxt.cameras = [camHUD];
 		doof.cameras = [camHUD];
@@ -2321,6 +2339,11 @@ class PlayState extends MusicBeatState
 		}
 		screenshader.Enabled = shakeCam && eyesoreson;
 
+		if(botplayTxt.visible) {
+			botplaySine += 180 * elapsed;
+			botplayTxt.alpha = 1 - Math.sin((Math.PI * botplaySine) / 180);
+		}
+
 		if (FlxG.keys.justPressed.NINE && iconP1.charPublic != 'bandu-origin')
 		{
 			if (iconP1.animation.curAnim.name == boyfriendOldIcon)
@@ -2479,7 +2502,7 @@ class PlayState extends MusicBeatState
 		FlxG.watch.addQuick("beatShit", curBeat);
 		FlxG.watch.addQuick("stepShit", curStep);
 
-		if (health <= 0)
+		if (health <= 0 && !botPlay)
 		{
 			if(!perfectMode)
 			{
@@ -2646,8 +2669,16 @@ class PlayState extends MusicBeatState
 						daNote.kill();
 						altNotes.remove(daNote, true);
 						daNote.destroy();
+				
 					}
 				});
+
+				if(daNote.mustPress && botPlay) {
+					if(daNote.strumTime <= Conductor.songPosition || (daNote.isSustainNote && daNote.canBeHit && daNote.prevNote.wasGoodHit)) {
+						goodNoteHit(daNote);
+						boyfriend.holdTimer = 0;
+					}
+				}
 			}
 			notes.forEachAlive(function(daNote:Note)
 			{
@@ -2847,6 +2878,11 @@ class PlayState extends MusicBeatState
 						}
 					}
 
+					if (!botPlay) {
+						vocals.volume = 0;
+						RecalculateRating();
+					}
+
 					daNote.active = false;
 					daNote.visible = false;
 
@@ -2860,7 +2896,7 @@ class PlayState extends MusicBeatState
 		if(camMoveAllowed && !inCutscene)
 			ZoomCam(focusOnDadGlobal);
 
-		if (!inCutscene)
+		if (!inCutscene && !botPlay)
 			keyShit();
 
 		#if debug
@@ -2986,7 +3022,7 @@ class PlayState extends MusicBeatState
 
 		FlxG.sound.music.volume = 0;
 		vocals.volume = 0;
-		if (SONG.validScore)
+		if (SONG.validScore && !botPlay)
 		{
 			trace("score is valid");
 			Highscore.saveScore(SONG.song, songScore, storyDifficulty, characteroverride == "none"
@@ -3018,13 +3054,14 @@ class PlayState extends MusicBeatState
 
 				StoryMenuState.weekUnlocked[Std.int(Math.min(storyWeek + 1, StoryMenuState.weekUnlocked.length - 1))] = true;
 
-				if (SONG.validScore)
+				if (SONG.validScore && !botPlay)
+
 				{
 					Highscore.saveWeekScore(storyWeek, campaignScore,
 						storyDifficulty, characteroverride == "none" || characteroverride == "bf" ? "bf" : characteroverride);
 				}
 
-				FlxG.save.data.weekUnlocked = StoryMenuState.weekUnlocked;
+				if (!botPlay) FlxG.save.data.weekUnlocked = StoryMenuState.weekUnlocked;
 				FlxG.save.flush();
 			}
 			else
@@ -3105,44 +3142,41 @@ class PlayState extends MusicBeatState
 		var rating:FlxSprite = new FlxSprite();
 		var score:Int = 350;
 
-		var daRating:String = "sick";
+		var daRating:String = "sick
 
-		if (noteDiff > Conductor.safeZoneOffset * 2)
-		{
-			daRating = 'shit';
-			totalNotesHit -= 2;
-			score = -3000;
-			ss = false;
-			shits++;
-		}
-		else if (noteDiff < Conductor.safeZoneOffset * -2)
-		{
-			daRating = 'shit';
-			totalNotesHit -= 2;
-			score = -3000;
-			ss = false;
-			shits++;
-		}
-		else if (noteDiff > Conductor.safeZoneOffset * 0.45)
-		{
-			daRating = 'bad';
-			score = -1000;
-			totalNotesHit += 0.2;
-			ss = false;
-			bads++;
-		}
-		else if (noteDiff > Conductor.safeZoneOffset * 0.25)
-		{
-			daRating = 'good';
-			totalNotesHit += 0.65;
-			score = 200;
-			ss = false;
-			goods++;
-		}
-		if (daRating == 'sick')
-		{
-			totalNotesHit += 1;
-			sicks++;
+		if (!botPlay) {
+			if (noteDiff > Conductor.safeZoneOffset * 2)
+			{
+				daRating = 'shit';
+				totalNotesHit -= 2;
+				score = 10;
+				ss = false;
+				shits++;
+			}
+			else if (noteDiff < Conductor.safeZoneOffset * -2)
+			{
+				daRating = 'shit';
+				totalNotesHit -= 2;
+				score = 25;
+				ss = false;
+				shits++;
+			}
+			else if (noteDiff > Conductor.safeZoneOffset * 0.45)
+			{
+				daRating = 'bad';
+				score = 100;
+				totalNotesHit += 0.2;
+				ss = false;
+				bads++;
+			}
+			else if (noteDiff > Conductor.safeZoneOffset * 0.25)
+			{
+				daRating = 'good';
+				totalNotesHit += 0.65;
+				score = 200;
+				ss = false;
+				goods++;
+			}
 		}
 		switch (notedata)
 		{
@@ -3583,7 +3617,7 @@ class PlayState extends MusicBeatState
 		{
 			goodNoteHit(note);
 		}
-		else if (!theFunne)
+		else if (!theFunne && !botPlay)
 		{
 			badNoteCheck(note);
 		}
